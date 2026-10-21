@@ -5,7 +5,8 @@ Run it against a private X server so it doesn't touch your desktop, e.g. a headl
   weston --backend=headless --socket=plasma-test --xwayland --width=1600 --height=1000 &
   DISPLAY=:N tools/ui_screenshot.py build/Plasma_artefacts/Release/Standalone/Plasma out.png 237,51
 
-Clicks are delivered with XSendEvent because Xwayland ignores XTest input.
+Each step is "x,y" (left click), "r:x,y" (right click) or "key:NAME" (an X keysym such as Return).
+Input is delivered with XSendEvent because Xwayland ignores XTest input.
 Needs ImageMagick's `import` for the capture.
 """
 import ctypes
@@ -40,10 +41,16 @@ class XEvent(ctypes.Union):
 
 
 X.XSendEvent.argtypes = [ctypes.c_void_p, c_ul, ctypes.c_int, ctypes.c_long, ctypes.POINTER(XEvent)]
+X.XStringToKeysym.restype = c_ul
+X.XStringToKeysym.argtypes = [ctypes.c_char_p]
+X.XKeysymToKeycode.restype = ctypes.c_ubyte
+X.XKeysymToKeycode.argtypes = [ctypes.c_void_p, c_ul]
+X.XGetInputFocus.argtypes = [ctypes.c_void_p, ctypes.POINTER(c_ul), ctypes.POINTER(ctypes.c_int)]
 
-MOTION_NOTIFY, BUTTON_PRESS, BUTTON_RELEASE = 6, 4, 5
+KEY_PRESS, KEY_RELEASE, MOTION_NOTIFY, BUTTON_PRESS, BUTTON_RELEASE = 2, 3, 6, 4, 5
+KEY_PRESS_MASK, KEY_RELEASE_MASK = 1 << 0, 1 << 1
 POINTER_MOTION_MASK, BUTTON_PRESS_MASK, BUTTON_RELEASE_MASK = 1 << 6, 1 << 2, 1 << 3
-BUTTON1_MASK = 1 << 8
+BUTTON1_MASK, BUTTON3_MASK = 1 << 8, 1 << 10
 
 
 def find_window(display, window, name):
@@ -84,13 +91,26 @@ def main():
             X.XSendEvent(display, window, 1, mask, ctypes.byref(event))
             X.XFlush(display)
 
-        for click in clicks:
-            x, y = map(int, click.split(','))
+        for step in clicks:
+            if step.startswith('key:'):
+                # XButtonEvent and XKeyEvent share a layout; `button` is the keycode field.
+                keycode = X.XKeysymToKeycode(display, X.XStringToKeysym(step[4:].encode()))
+                send(KEY_PRESS, 0, 0, keycode, 0, KEY_PRESS_MASK)
+                time.sleep(0.1)
+                send(KEY_RELEASE, 0, 0, keycode, 0, KEY_RELEASE_MASK)
+                time.sleep(1.5)
+                continue
+
+            button, release_state = 1, BUTTON1_MASK
+            if step.startswith('r:'):
+                step = step[2:]
+                button, release_state = 3, BUTTON3_MASK
+            x, y = map(int, step.split(','))
             send(MOTION_NOTIFY, x, y, 0, 0, POINTER_MOTION_MASK)
             time.sleep(0.3)
-            send(BUTTON_PRESS, x, y, 1, 0, BUTTON_PRESS_MASK)
+            send(BUTTON_PRESS, x, y, button, 0, BUTTON_PRESS_MASK)
             time.sleep(0.1)
-            send(BUTTON_RELEASE, x, y, 1, BUTTON1_MASK, BUTTON_RELEASE_MASK)
+            send(BUTTON_RELEASE, x, y, button, release_state, BUTTON_RELEASE_MASK)
             time.sleep(1.5)
         subprocess.run(['import', '-window', hex(window), out_path], check=True)
     finally:

@@ -48,6 +48,11 @@ User data (presets, wavetables, LFO shapes, skins) is stored in `~/.local/share/
   - Pitch: transpose (default −12 semitones) and fine tune.
   - Level, Pan, and routing to Filter 1, Filter 2, both, Effects or Direct Out.
   - The phase restarts on every note so the low end hits the same each time. All controls can be modulated.
+- **Formula wavetables**: right-click an oscillator's wavetable → **Create from Formula…**, type a formula (or pick one from EXAMPLES) and press Enter. This replaces Vital's server-only "Text to Wavetable".
+  - Variables: `x` (−1 to 1 across the cycle), `t` (0 to 1), `y` (0 to 1 through the table). A formula that uses `y` renders a 65-keyframe table you can sweep with the Wave Frame knob.
+  - Operators: `+ - * / % ^`, comparisons, `&& || !` and `cond ? a : b`.
+  - Functions: `sin cos tan asin acos atan atan2 sinh cosh tanh exp log log2 log10 sqrt abs sign floor ceil round frac min max clamp pow mod lerp step smoothstep rand saw tri square pulse`. The full reference is in `src/common/wavetable/formula.h`.
+  - Results are DC-removed and normalized. Errors show the position of the problem.
 - **Arpeggiator** (Advanced tab → ARPEGGIATOR):
   - Modes: Up, Down, Up/Down, Down/Up, As Played, Random, Chord.
   - Rate: 1/1 to 1/64, including dotted and triplet values.
@@ -64,15 +69,16 @@ User data (presets, wavetables, LFO shapes, skins) is stored in `~/.local/share/
 ## Tests
 
 ```bash
-cmake --build build --target plasma_hyper_test plasma_arp_test plasma_sub_test
-./build/plasma_hyper_test && ./build/plasma_arp_test && ./build/plasma_sub_test
+cmake --build build --target plasma_hyper_test plasma_arp_test plasma_sub_test plasma_formula_test
+./build/plasma_hyper_test && ./build/plasma_arp_test && ./build/plasma_sub_test && ./build/plasma_formula_test
 ```
 
 - `plasma_hyper_test` renders a note with Hyper/Dimension off and on. It checks that the output stays finite, that each stage widens the stereo image, and that pre-Hyper presets keep their effect order.
+- `plasma_formula_test` covers the formula language (precedence, functions, error messages) and renders formula tables through an oscillator, including a sine-to-square sweep on the Wave Frame knob.
 - `plasma_sub_test` plays the sub alone and checks its pitch, each waveform's harmonic ratios, panning, and save/reload.
 - `plasma_arp_test` checks the arp's patterns and sample-exact timing (gate, swing, latch, host sync, pass-through) and plays it through the plugin.
 
-`tools/ui_screenshot.py` clicks through the standalone UI on a private X server and saves a screenshot (usage is in the file).
+`tools/ui_screenshot.py` clicks, right-clicks and presses keys in the standalone UI on a private X server and saves a screenshot (usage is in the file).
 
 ## License
 

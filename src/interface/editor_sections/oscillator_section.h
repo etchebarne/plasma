@@ -69,7 +69,7 @@ class OscillatorSection : public SynthSection, public PresetSelector::Listener,
     void resetOscillatorModulationDistortionType();
     void addListener(Listener* listener) { listeners_.push_back(listener); }
 
-    std::string loadWavetableFromText(const String& text);
+    std::string loadWavetableFromFormula(const String& text);
     Slider* getWaveFrameSlider();
     void setDistortionSelected(int selection);
     int getDistortion() const { return current_distortion_type_; }
@@ -79,8 +79,8 @@ class OscillatorSection : public SynthSection, public PresetSelector::Listener,
 
     void loadBrowserState();
     void setIndexSelected();
-    void setLanguage(int index);
-    void languageSelectCancelled();
+    void setFormulaExample(int index);
+    void formulaExamplesCancelled();
     void prevClicked() override;
     void nextClicked() override;
     void textMouseDown(const MouseEvent& e) override;
@@ -91,7 +91,7 @@ class OscillatorSection : public SynthSection, public PresetSelector::Listener,
     void loadWavetable(json& wavetable_data) override;
     void loadDefaultWavetable() override;
     void resynthesizeToWavetable() override;
-    void textToWavetable() override;
+    void formulaToWavetable() override;
     void saveWavetable() override;
     void loadFile(const File& wavetable_file) override;
     File getCurrentFile() override { return current_file_; }
@@ -107,7 +107,7 @@ class OscillatorSection : public SynthSection, public PresetSelector::Listener,
     Rectangle<float> getWavetableRelativeBounds();
 
   private:
-    void showTtwtSettings();
+    void showFormulaExamples();
     void setupSpectralMorph();
     void setupDistortion();
     void setupDestination();
@@ -128,9 +128,8 @@ class OscillatorSection : public SynthSection, public PresetSelector::Listener,
     int current_distortion_type_;
     int current_spectral_morph_type_;
     int current_destination_;
-    bool show_ttwt_error_;
-    bool showing_language_menu_;
-    int ttwt_language_;
+    bool show_formula_error_;
+    bool showing_examples_menu_;
 
     std::unique_ptr<SynthButton> oscillator_on_;
     std::unique_ptr<SynthButton> dimension_button_;
@@ -166,10 +165,10 @@ class OscillatorSection : public SynthSection, public PresetSelector::Listener,
     std::unique_ptr<SynthSlider> unison_detune_power_;
     std::unique_ptr<OpenGlShapeButton> edit_button_;
 
-    OpenGlQuad ttwt_overlay_;
-    std::unique_ptr<OpenGlTextEditor> ttwt_;
-    std::unique_ptr<SynthButton> ttwt_settings_;
-    std::unique_ptr<PlainTextComponent> ttwt_error_text_;
+    OpenGlQuad formula_overlay_;
+    std::unique_ptr<OpenGlTextEditor> formula_editor_;
+    std::unique_ptr<SynthButton> formula_examples_;
+    std::unique_ptr<PlainTextComponent> formula_error_text_;
 
     std::unique_ptr<OpenGlShapeButton> prev_destination_;
     std::unique_ptr<OpenGlShapeButton> next_destination_;

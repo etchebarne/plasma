@@ -116,11 +116,13 @@ clap_juce_extensions_plugin(TARGET Plasma
   CLAP_FEATURES instrument synthesizer stereo)
 
 # Headless engine checks, built on demand:
-#   cmake --build build --target plasma_hyper_test plasma_arp_test plasma_sub_test
+#   cmake --build build --target plasma_hyper_test plasma_arp_test plasma_sub_test plasma_formula_test
 function(plasma_add_test name source)
   add_executable(${name} EXCLUDE_FROM_ALL ${source})
   target_include_directories(${name} PRIVATE src/juce_header third_party/JUCE/modules third_party
-    src/common src/synthesis/framework
+    src/common src/common/wavetable src/synthesis/framework src/synthesis/lookups src/synthesis/synth_engine
+    src/synthesis/effects src/synthesis/filters src/synthesis/modulators src/synthesis/modules
+    src/synthesis/producers src/synthesis/utilities src/interface/look_and_feel
     $<TARGET_PROPERTY:PlasmaBinaryData,INTERFACE_INCLUDE_DIRECTORIES>)
   target_compile_definitions(${name} PRIVATE
     $<TARGET_PROPERTY:Plasma,COMPILE_DEFINITIONS> JUCE_DONT_DECLARE_PROJECTINFO=1 JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1)
@@ -130,3 +132,4 @@ endfunction()
 plasma_add_test(plasma_hyper_test tests/hyper_test.cpp)
 plasma_add_test(plasma_arp_test tests/arp_test.cpp)
 plasma_add_test(plasma_sub_test tests/sub_test.cpp)
+plasma_add_test(plasma_formula_test tests/formula_test.cpp)

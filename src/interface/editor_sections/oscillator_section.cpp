@@ -21,6 +21,7 @@
 #include "skin.h"
 #include "paths.h"
 #include "fonts.h"
+#include "formula_wavetable.h"
 #include "full_interface.h"
 #include "load_save.h"
 #include "preset_selector.h"
@@ -66,80 +67,7 @@ namespace {
     "RM <- SAMPLE"
   };
 
-  const std::string kLanguageNames[] = {
-    "Arabic",
-    "Czech",
-    "Danish",
-    "Dutch",
-    "English (Aus)",
-    "English (UK)",
-    "English (US)",
-    "Filipino",
-    "Finnish",
-    "French (Can)",
-    "French (Fr)",
-    "German",
-    "Greek",
-    "Hindi",
-    "Hungarian",
-    "Indonesian",
-    "Italian",
-    "Japanese",
-    "Korean",
-    "Mandarin Chinese",
-    "Norwegian",
-    "Polish",
-    "Portuguese (Br)",
-    "Portuguese (Po)",
-    "Russian",
-    "Slovak",
-    "Spanish",
-    "Swedish",
-    "Turkish",
-    "Ukrainian",
-    "Vietnamese"
-  };
-
-  const std::string kLanguageCodes[] = {
-    "ar-XA",
-    "cs-CZ",
-    "da-DK",
-    "nl-NL",
-    "en-AU",
-    "en-GB",
-    "en-US",
-    "fil-PH",
-    "fi-FI",
-    "fr-CA",
-    "fr-FR",
-    "de-DE",
-    "el-GR",
-    "hi-IN",
-    "hu-HU",
-    "id-ID",
-    "it-IT",
-    "ja-JP",
-    "ko-KR",
-    "cmn-CN",
-    "nb-NO",
-    "pl-PL",
-    "pt-BR",
-    "pt-PT",
-    "ru-RU",
-    "sk-SK",
-    "es-ES",
-    "sv-SE",
-    "tr-TR",
-    "uk-UA",
-    "vi-VN"
-  };
-
-  const std::string kUrlPrefix = "";
-  const std::string kLanguageUrlQuery = "&language=";
-  const std::string kTokenUrlQuery = "&idToken=";
-  constexpr int kTtwtId = INT_MAX;
   constexpr int kAddCustomFolderId = INT_MAX - 1;
-  constexpr int kMaxTTWTLength = 100;
   constexpr int kShowErrorMs = 2000;
 
   String getDistortionSuffix(int type, int index) {
@@ -165,17 +93,6 @@ namespace {
 
   String getDistortionString(int type, int index) {
     return String(kDistortionTypes[type]) + getDistortionSuffix(type, index);
-  }
-
-  int getLanguageIndex(const std::string& language) {
-    constexpr int kDefaultIndex = 4;
-
-    for (int i = 0; i < sizeof(kLanguageNames) / sizeof(std::string); ++i) {
-      if (kLanguageCodes[i] == language)
-        return i;
-    }
-
-    return kDefaultIndex;
   }
 
   bool isBipolarDistortionType(int distortion_type) {
@@ -281,7 +198,7 @@ OscillatorSection::OscillatorSection(Authentication* auth,
                                      const vital::output_map& mono_modulations,
                                      const vital::output_map& poly_modulations) :
     SynthSection(String("OSC ") + String(index + 1)), auth_(auth), index_(index),
-    show_ttwt_error_(false), ttwt_overlay_(Shaders::kRoundedRectangleFragment) {
+    show_formula_error_(false), formula_overlay_(Shaders::kRoundedRectangleFragment) {
   std::string number = std::to_string(index + 1);
   wavetable_ = std::make_unique<Wavetable3d>(index, mono_modulations, poly_modulations);
   addOpenGlComponent(wavetable_.get());
@@ -462,34 +379,33 @@ OscillatorSection::OscillatorSection(Authentication* auth,
   addSlider(dimension_value_.get());
   dimension_value_->setVisible(false);
 
-  ttwt_overlay_.setQuad(0, -1.0f, -1.0f, 2.0f, 2.0f);
-  addOpenGlComponent(&ttwt_overlay_);
-  ttwt_overlay_.setVisible(false);
+  formula_overlay_.setQuad(0, -1.0f, -1.0f, 2.0f, 2.0f);
+  addOpenGlComponent(&formula_overlay_);
+  formula_overlay_.setVisible(false);
 
 #if !defined(NO_TEXT_ENTRY)
-  ttwt_ = std::make_unique<OpenGlTextEditor>("ttwt");
-  ttwt_->addListener(this);
-  ttwt_->setFont(Fonts::instance()->proportional_light().withPointHeight(16.0f));
-  ttwt_->setMultiLine(false, false);
-  ttwt_->setJustification(Justification::centred);
-  addChildComponent(ttwt_.get());
-  addOpenGlComponent(ttwt_->getImageComponent());
+  formula_editor_ = std::make_unique<OpenGlTextEditor>("formula");
+  formula_editor_->addListener(this);
+  formula_editor_->setFont(Fonts::instance()->proportional_light().withPointHeight(16.0f));
+  formula_editor_->setMultiLine(false, false);
+  formula_editor_->setJustification(Justification::centred);
+  addChildComponent(formula_editor_.get());
+  addOpenGlComponent(formula_editor_->getImageComponent());
 #endif
 
-  showing_language_menu_ = false;
-  ttwt_language_ = getLanguageIndex(LoadSave::getPreferredTTWTLanguage());
-  ttwt_settings_ = std::make_unique<SynthButton>("Menu");
-  ttwt_settings_->setNoBackground();
-  addChildComponent(ttwt_settings_.get());
-  addOpenGlComponent(ttwt_settings_->getGlComponent());
-  ttwt_settings_->addListener(this);
-  ttwt_settings_->setTriggeredOnMouseDown(true);
-  ttwt_settings_->setText(kLanguageCodes[ttwt_language_]);
+  showing_examples_menu_ = false;
+  formula_examples_ = std::make_unique<SynthButton>("Menu");
+  formula_examples_->setNoBackground();
+  addChildComponent(formula_examples_.get());
+  addOpenGlComponent(formula_examples_->getGlComponent());
+  formula_examples_->addListener(this);
+  formula_examples_->setTriggeredOnMouseDown(true);
+  formula_examples_->setText("EXAMPLES");
 
-  std::string ttwt_error = "Error rendering speech. Check internet connection";
-  ttwt_error_text_ = std::make_unique<PlainTextComponent>("ttwt error", ttwt_error);
-  addOpenGlComponent(ttwt_error_text_.get());
-  ttwt_error_text_->setVisible(false);
+  std::string formula_error = "Formula error";
+  formula_error_text_ = std::make_unique<PlainTextComponent>("formula error", formula_error);
+  addOpenGlComponent(formula_error_text_.get());
+  formula_error_text_->setVisible(false);
 
   oscillator_on_ = std::make_unique<SynthButton>("osc_" + number + "_on");
   addButton(oscillator_on_.get());
@@ -550,14 +466,14 @@ void OscillatorSection::paintBackground(Graphics& g) {
   if (getWidth() == 0)
     return;
 
-  if (ttwt_) {
-    ttwt_->setColour(CaretComponent::caretColourId, findColour(Skin::kTextEditorCaret, true));
-    ttwt_->setColour(TextEditor::textColourId, findColour(Skin::kBodyText, true));
-    ttwt_->setColour(TextEditor::highlightedTextColourId, findColour(Skin::kBodyText, true));
-    ttwt_->setColour(TextEditor::highlightColourId, findColour(Skin::kTextEditorSelection, true));
+  if (formula_editor_) {
+    formula_editor_->setColour(CaretComponent::caretColourId, findColour(Skin::kTextEditorCaret, true));
+    formula_editor_->setColour(TextEditor::textColourId, findColour(Skin::kBodyText, true));
+    formula_editor_->setColour(TextEditor::highlightedTextColourId, findColour(Skin::kBodyText, true));
+    formula_editor_->setColour(TextEditor::highlightColourId, findColour(Skin::kTextEditorSelection, true));
     Colour empty_color = findColour(Skin::kBodyText, true);
     empty_color = empty_color.withAlpha(0.5f * empty_color.getFloatAlpha());
-    ttwt_->setTextToShowWhenEmpty(TRANS("Text to wavetable"), empty_color);
+    formula_editor_->setTextToShowWhenEmpty(TRANS("Formula, e.g. sin(pi * x) * (1 - y)"), empty_color);
   }
 
   paintContainer(g);
@@ -720,23 +636,23 @@ void OscillatorSection::resized() {
   next_destination_->setBounds(destination_x + top_row_width - browse_width, destination_y,
                                browse_width, browse_width);
 
-  ttwt_overlay_.setRounding(findValue(Skin::kWidgetRoundedCorner));
-  ttwt_overlay_.setBounds(wavetable_->getBounds());
-  ttwt_overlay_.setColor(findColour(Skin::kOverlayScreen, true));
+  formula_overlay_.setRounding(findValue(Skin::kWidgetRoundedCorner));
+  formula_overlay_.setBounds(wavetable_->getBounds());
+  formula_overlay_.setColor(findColour(Skin::kOverlayScreen, true));
 
-  if (ttwt_) {
-    float ttwt_height = title_width;
-    int settings_width = ttwt_height * 2.0f;
-    int ttwt_y = (wavetable_->getHeight() - ttwt_height) / 2;
-    int ttwt_x = wavetable_->getX() + widget_margin;
-    int ttwt_width = wavetable_->getWidth() - 2 * widget_margin;
-    ttwt_->setBounds(ttwt_x, ttwt_y, ttwt_width, ttwt_height);
-    ttwt_->setFont(Fonts::instance()->proportional_light().withPointHeight(ttwt_height * 0.6f));
-    ttwt_settings_->setBounds(ttwt_->getRight() - settings_width, ttwt_->getBottom(), settings_width, ttwt_height / 2);
+  if (formula_editor_) {
+    float formula_height = title_width;
+    int settings_width = formula_height * 2.0f;
+    int formula_y = (wavetable_->getHeight() - formula_height) / 2;
+    int formula_x = wavetable_->getX() + widget_margin;
+    int formula_width = wavetable_->getWidth() - 2 * widget_margin;
+    formula_editor_->setBounds(formula_x, formula_y, formula_width, formula_height);
+    formula_editor_->setFont(Fonts::instance()->proportional_light().withPointHeight(formula_height * 0.6f));
+    formula_examples_->setBounds(formula_editor_->getRight() - settings_width, formula_editor_->getBottom(), settings_width, formula_height / 2);
 
-    ttwt_error_text_->setTextSize(label_text_height);
-    ttwt_error_text_->setBounds(ttwt_->getBounds());
-    ttwt_error_text_->setColor(body_text);
+    formula_error_text_->setTextSize(label_text_height);
+    formula_error_text_->setBounds(formula_editor_->getBounds());
+    formula_error_text_->setColor(body_text);
   }
 }
 
@@ -782,8 +698,8 @@ void OscillatorSection::buttonClicked(Button* clicked_button) {
     Point<int> position(destination_selector_->getX(), destination_selector_->getBottom());
     showPopupSelector(this, position, options, [=](int selection) { setDestinationSelected(selection); });
   }
-  else if (clicked_button == ttwt_settings_.get())
-    showTtwtSettings();
+  else if (clicked_button == formula_examples_.get())
+    showFormulaExamples();
   else if (clicked_button == dimension_button_.get()) {
     int render_type = (wavetable_->getRenderType() + Wavetable3d::kNumRenderTypes - 1) % Wavetable3d::kNumRenderTypes;
     dimension_button_->setText(strings::kWavetableDimensionNames[render_type]);
@@ -841,37 +757,36 @@ void OscillatorSection::setAllValues(vital::control_map& controls) {
 void OscillatorSection::textEditorReturnKeyPressed(TextEditor& text_editor) {
   String text = text_editor.getText();
   text = text.trim();
-  show_ttwt_error_ = false;
+  show_formula_error_ = false;
   if (!text.isEmpty()) {
-    std::string error = loadWavetableFromText(text);
-    show_ttwt_error_ = !error.empty();
-    if (show_ttwt_error_) {
-      ttwt_error_text_->setText(error);
-      ttwt_error_text_->redrawImage(true);
-      ttwt_error_text_->setVisible(true);
+    std::string error = loadWavetableFromFormula(text);
+    show_formula_error_ = !error.empty();
+    if (show_formula_error_) {
+      formula_error_text_->setText(error);
+      formula_error_text_->redrawImage(true);
+      formula_error_text_->setVisible(true);
       startTimer(kShowErrorMs);
     }
   }
 
-  ttwt_->clear();
-  ttwt_overlay_.setVisible(show_ttwt_error_);
-  ttwt_->setVisible(false);
-  ttwt_settings_->setVisible(false);
+  formula_overlay_.setVisible(show_formula_error_);
+  formula_editor_->setVisible(false);
+  formula_examples_->setVisible(false);
 }
 
 void OscillatorSection::textEditorFocusLost(TextEditor& text_editor) {
-  if (showing_language_menu_)
+  if (showing_examples_menu_)
     return;
 
-  ttwt_overlay_.setVisible(show_ttwt_error_);
-  ttwt_->setVisible(false);
-  ttwt_settings_->setVisible(false);
+  formula_overlay_.setVisible(show_formula_error_);
+  formula_editor_->setVisible(false);
+  formula_examples_->setVisible(false);
 }
 
 void OscillatorSection::timerCallback() {
-  show_ttwt_error_ = false;
-  ttwt_error_text_->setVisible(false);
-  ttwt_overlay_.setVisible(false);
+  show_formula_error_ = false;
+  formula_error_text_->setVisible(false);
+  formula_overlay_.setVisible(false);
   stopTimer();
 }
 
@@ -886,44 +801,27 @@ void OscillatorSection::setName(String name) {
   preset_selector_->setText(name);
 }
 
-void OscillatorSection::showTtwtSettings() {
-  showing_language_menu_ = true;
+void OscillatorSection::showFormulaExamples() {
+  showing_examples_menu_ = true;
   PopupItems options;
 
-  for (int i = 0; i < sizeof(kLanguageNames) / sizeof(std::string); ++i)
-    options.addItem(i, kLanguageNames[i]);
+  for (int i = 0; i < formula_wavetable::kNumExamples; ++i)
+    options.addItem(i, formula_wavetable::kExamples[i].name);
 
-  Point<int> position(ttwt_settings_->getX(), ttwt_settings_->getBottom());
-  showPopupSelector(this, position, options, [=](int selection) { setLanguage(selection); });
+  Point<int> position(formula_examples_->getX(), formula_examples_->getBottom());
+  showPopupSelector(this, position, options, [=](int selection) { setFormulaExample(selection); },
+                    [=]() { formulaExamplesCancelled(); });
 }
 
-std::string OscillatorSection::loadWavetableFromText(const String& text) {
-  String clamped_text = text.substring(0, kMaxTTWTLength);
-  String language_query = String(kLanguageUrlQuery) + URL::addEscapeChars(kLanguageCodes[ttwt_language_], true);
-  std::string token = auth_->token();
-  String token_query = String(kTokenUrlQuery) + URL::addEscapeChars(token, true);
-  URL ttwt_url(String(kUrlPrefix) + URL::addEscapeChars(clamped_text, true) + language_query + token_query);
+std::string OscillatorSection::loadWavetableFromFormula(const String& text) {
+  std::string error;
+  json wavetable_data = formula_wavetable::createWavetableJson(text.toStdString(), error);
+  if (!error.empty())
+    return error;
 
-  try {
-    String result = ttwt_url.readEntireTextStream(false);
-    json data = json::parse(result.toStdString());
-
-    if (data.count("error"))
-      return data["error"];
-
-    std::string hex_encoded_buffer = data["buffer"];
-    MemoryBlock audio_memory;
-    audio_memory.loadFromHexString(hex_encoded_buffer);
-    MemoryInputStream* audio_stream = new MemoryInputStream(audio_memory, false);
-
-    bool succeeded = loadAudioAsWavetable("TTWT", audio_stream, WavetableCreator::kTtwt);
-    if (succeeded)
-      return "";
-    return "Error converting speech to wavetable.";
-  }
-  catch (const std::exception& e) {
-    return "Error rendering speech. Check internet connection";
-  }
+  loadWavetable(wavetable_data);
+  wavetable_->repaintBackground();
+  return "";
 }
 
 Slider* OscillatorSection::getWaveFrameSlider() {
@@ -970,21 +868,20 @@ void OscillatorSection::setIndexSelected() {
     return;
 }
 
-void OscillatorSection::setLanguage(int index) {
-  ttwt_language_ = index;
-  LoadSave::savePreferredTTWTLanguage(kLanguageCodes[ttwt_language_]);
-  showing_language_menu_ = false;
-  if (ttwt_)
-    ttwt_->grabKeyboardFocus();
-  ttwt_settings_->setToggleState(false, dontSendNotification);
-  ttwt_settings_->setText(kLanguageCodes[ttwt_language_]);
+void OscillatorSection::setFormulaExample(int index) {
+  showing_examples_menu_ = false;
+  if (formula_editor_) {
+    formula_editor_->setText(formula_wavetable::kExamples[index].formula, false);
+    formula_editor_->grabKeyboardFocus();
+  }
+  formula_examples_->setToggleState(false, dontSendNotification);
 }
 
-void OscillatorSection::languageSelectCancelled() {
-  showing_language_menu_ = false;
-  if (ttwt_)
-    ttwt_->grabKeyboardFocus();
-  ttwt_settings_->setToggleState(false, dontSendNotification);
+void OscillatorSection::formulaExamplesCancelled() {
+  showing_examples_menu_ = false;
+  if (formula_editor_)
+    formula_editor_->grabKeyboardFocus();
+  formula_examples_->setToggleState(false, dontSendNotification);
 }
 
 void OscillatorSection::prevClicked() {
@@ -1077,16 +974,17 @@ void OscillatorSection::resynthesizeToWavetable() {
   wavetable_->setLoadingWavetable(false);
 }
 
-void OscillatorSection::textToWavetable() {
-  if (auth_)
-    auth_->refreshToken();
-
-  ttwt_settings_->setColour(Skin::kIconButtonOff, findColour(Skin::kWidgetPrimary1, true));
-  ttwt_overlay_.setVisible(true);
-  ttwt_->setVisible(true);
-  ttwt_settings_->setVisible(true);
-  ttwt_->resized();
-  ttwt_->grabKeyboardFocus();
+void OscillatorSection::formulaToWavetable() {
+  formula_examples_->setColour(Skin::kIconButtonOff, findColour(Skin::kWidgetPrimary1, true));
+  formula_overlay_.setVisible(true);
+  formula_editor_->setVisible(true);
+  formula_examples_->setVisible(true);
+  formula_editor_->resized();
+  formula_editor_->grabKeyboardFocus();
+  // The placeholder hint is hidden while the editor has focus, so start from a selected example.
+  if (formula_editor_->isEmpty())
+    formula_editor_->setText(formula_wavetable::kExamples[0].formula, false);
+  formula_editor_->selectAll();
 }
 
 void OscillatorSection::saveWavetable() {

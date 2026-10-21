@@ -269,11 +269,7 @@ void Wavetable3d::mouseDown(const MouseEvent& e) {
     options.addItem(-1, "");
     options.addItem(kInit, "Initialize");
 
-    FullInterface* full_interface = findParentComponentOfClass<FullInterface>();
-    if (full_interface && !full_interface->getSignedInName().empty())
-      options.addItem(kTextToWavetable, "Text to Wavetable");
-    else
-      options.addItem(kLogIn, "Text to Wavetable - Log in");
+    options.addItem(kFormulaToWavetable, "Create from Formula...");
 
     options.addItem(kResynthesizePreset, "Resynthesize Preset to Wavetable");
 
@@ -645,19 +641,15 @@ void Wavetable3d::respondToMenuCallback(int option) {
     for (Listener* listener : listeners_)
       listener->saveWavetable();
   }
-  else if (option == kTextToWavetable) {
+  else if (option == kFormulaToWavetable) {
     for (Listener* listener : listeners_)
-      listener->textToWavetable();
+      listener->formulaToWavetable();
   }
   else if (option == kResynthesizePreset) {
     for (Listener* listener : listeners_)
       listener->resynthesizeToWavetable();
     repaintBackground();
     setDirty();
-  }
-  else if (option == kLogIn) {
-    FullInterface* full_interface = findParentComponentOfClass<FullInterface>();
-    return full_interface->signIn();
   }
   else if (option == kCopy) {
     FullInterface* parent = findParentComponentOfClass<FullInterface>();

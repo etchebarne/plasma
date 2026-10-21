@@ -41,6 +41,8 @@
 #include "wavetable_group.cpp"
 #include "wave_window_modifier.cpp"
 #include "wavetable_component.cpp"
+#include "formula.cpp"
+#include "formula_wavetable.cpp"
 #include "pitch_detector.cpp"
 #include "wave_warp_modifier.cpp"
 #include "slew_limit_modifier.cpp"
