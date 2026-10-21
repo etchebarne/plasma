@@ -53,7 +53,7 @@ class UpdateCheckSection : public Overlay, public URL::DownloadTask::Listener {
 
     class VersionRequestThread : public Thread {
       public:
-        VersionRequestThread(UpdateCheckSection* ref) : Thread("Vial Download Thread"), ref_(ref) { }
+        VersionRequestThread(UpdateCheckSection* ref) : Thread("Plasma Download Thread"), ref_(ref) { }
 
         void run() override {
           ref_->checkUpdate();

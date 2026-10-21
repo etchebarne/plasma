@@ -596,7 +596,7 @@ void FullInterface::newOpenGLContextCreated() {
   unsupported_ = version_supported < kMinOpenGlVersion;
   if (unsupported_) {
     NativeMessageBox::showMessageBoxAsync(AlertWindow::WarningIcon, "Unsupported OpenGl Version",
-                                          String("Vial requires OpenGL version: ") + String(kMinOpenGlVersion) +
+                                          String("Plasma requires OpenGL version: ") + String(kMinOpenGlVersion) +
                                           String("\nSupported version: ") + String(version_supported));
     return;
   }

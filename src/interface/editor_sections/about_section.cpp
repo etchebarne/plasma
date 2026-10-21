@@ -36,12 +36,12 @@ AboutSection::AboutSection(const String& name) : Overlay(name), body_(Shaders::k
   logo_ = std::make_unique<AppLogo>("logo");
   addOpenGlComponent(logo_.get());
 
-  name_text_ = std::make_unique<PlainTextComponent>("plugin name", "VIAL");
+  name_text_ = std::make_unique<PlainTextComponent>("plugin name", "PLASMA");
   addOpenGlComponent(name_text_.get());
   name_text_->setFontType(PlainTextComponent::kRegular);
   name_text_->setTextSize(40.0f);
 
-  version_text_ = std::make_unique<PlainTextComponent>("version", String("version  ") + ProjectInfo::versionString);
+  version_text_ = std::make_unique<PlainTextComponent>("version", String("version  ") + ProjectInfo::versionString + String("   |   built on Vital by Matt Tytel, GPLv3"));
   addOpenGlComponent(version_text_.get());
   version_text_->setFontType(PlainTextComponent::kLight);
   version_text_->setTextSize(12.0f);

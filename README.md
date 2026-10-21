@@ -1,27 +1,51 @@
-# Vital
-Vital is a spectral warping wavetable synthesizer. This is the source.
+# Plasma
 
-This repository is updated on a delay after binary releases.
+A spectral-warping wavetable synthesizer in the style of Serum, packaged as a **CLAP** plugin (plus VST3) for Bitwig and other hosts.
 
-## Code Licensing
-If you are making a proprietary or closed source app and would like to use Vital's source code, contact licensing@vital.audio for non GPLv3 licensing options.
+Plasma is built on the GPLv3 source of [Vital](https://github.com/mtytel/vital) by Matt Tytel. Per that project's terms, this build does not use the Vital name or branding, does not talk to any vital.audio service, and ships none of Vital's factory presets.
+
+## Building (Linux)
+
+Requirements: a C++17 compiler, CMake ≥ 3.15, Ninja, and the dev headers for freetype2, X11 (Xext, Xinerama, Xrandr, Xcursor) and OpenGL. ALSA, JACK and libcurl are not needed.
+
+```bash
+cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j
+```
+
+Outputs are in `build/Plasma_artefacts/Release/`:
+
+- `CLAP/Plasma.clap`
+- `VST3/Plasma.vst3`
+- `Standalone/Plasma`: UI only, with no audio backend compiled in. It's useful for checking the interface.
 
 ## Installing
-Create an account and download Vital at [vital.audio](https://vital.audio)
 
-## Issues
-Report bugs (e.g.non-code and non-compiling issues) to https://forum.vital.audio
+```bash
+cp build/Plasma_artefacts/Release/CLAP/Plasma.clap ~/.clap/
+```
 
-Feel free to report issues on building/compiling here but note that I'm not prioritizing them.
+In Bitwig, rescan plugins (Settings → Plug-ins). Plasma shows up as an instrument from "Plasma".
 
-## Pull requests
-I will not take any pull requests.
+User data (presets, wavetables, LFO shapes, skins) is stored in `~/.local/share/plasma/` (or `$XDG_DATA_HOME/plasma`). Vital-format files (`.vital`, `.vitaltable`, `.vitalbank`, `.vitallfo`) load as-is. To use a Vital library you already own, copy or symlink its folders in there.
 
-## What can you do with the source
-The source code is licensed under the GPLv3. If you download the source or create builds you must comply with that license.
+## Layout
 
-### Things you can't do with this source
- - Do not create an app and distribute it on the iOS app store. The app store is not comptabile with GPLv3 and you'll only get an exception for this if you're paying for a GPLv3 exception for Vital's source (see Code Licensing above).
- - Do not use the name "Vital", "Vital Audio", "Tytel" or "Matt Tytel" for marketing or to name any distribution of binaries built with this source. This source code does not give you rights to infringe on trademarks.
- - Do not connect to any web service at https://vital.audio, https://account.vital.audio or https://store.vital.audio from your own builds. This is against the terms of using those sites.
- - Do not distribute the presets that come with the free version of Vital. They're under a separate license that does not allow redistribution.
+- `src/`: synth engine, UI and plugin code (from Vital, with Plasma changes)
+- `third_party/JUCE`: the CMake tooling from JUCE 6.0.5, with Vital's patched JUCE modules
+- `third_party/clap-juce-extensions`: CLAP wrapper (MIT)
+- `CMakeLists.txt`: the build; the Projucer `.jucer` files and old Makefiles are kept for reference only
+
+## Changes from upstream Vital
+
+- CMake build with a CLAP target.
+- Host parameter fixes:
+  - a text lookup that went out of bounds (crashed on parameter display);
+  - text → value parsing now inverts the display scaling and normalizes;
+  - the host is told to rescan values after a state load;
+  - corrupt host state no longer opens a blocking modal dialog.
+- Rebranded as Plasma: new logo, name and data directory.
+
+## License
+
+GPLv3. See `LICENSE`.

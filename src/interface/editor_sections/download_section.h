@@ -56,7 +56,7 @@ class DownloadSection : public Overlay, public URL::DownloadTask::Listener, publ
     class DownloadThread : public Thread {
       public:
         DownloadThread(DownloadSection* ref, URL url, File dest) :
-            Thread("Vial Download Thread"), ref_(ref), url_(std::move(url)), dest_(std::move(dest)) { }
+            Thread("Plasma Download Thread"), ref_(ref), url_(std::move(url)), dest_(std::move(dest)) { }
         virtual ~DownloadThread() { }
 
         void run() override {
@@ -71,7 +71,7 @@ class DownloadSection : public Overlay, public URL::DownloadTask::Listener, publ
 
     class InstallThread : public Thread {
       public:
-        InstallThread(DownloadSection* ref) : Thread("Vial Install Thread"), ref_(ref) { }
+        InstallThread(DownloadSection* ref) : Thread("Plasma Install Thread"), ref_(ref) { }
         virtual ~InstallThread() { }
 
         void run() override {

@@ -22,7 +22,7 @@ juce_add_plugin(Plasma
   BUNDLE_ID "net.etchebarne.plasma"
   PLUGIN_MANUFACTURER_CODE Plsm
   PLUGIN_CODE Plsm
-  FORMATS VST3
+  FORMATS VST3 Standalone
   IS_SYNTH TRUE
   NEEDS_MIDI_INPUT TRUE
   NEEDS_MIDI_OUTPUT FALSE
