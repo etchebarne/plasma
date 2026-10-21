@@ -21,6 +21,7 @@
 #include "line_generator.h"
 #include "synth_constants.h"
 #include "synth_types.h"
+#include "arpeggiator.h"
 #include "midi_manager.h"
 #include "tuning.h"
 #include "wavetable_creator.h"
@@ -159,11 +160,13 @@ class SynthBase : public MidiManager::Listener {
     void writeAudio(AudioSampleBuffer* buffer, int channels, int samples, int offset);
     void processMidi(MidiBuffer& buffer, int start_sample = 0, int end_sample = 0);
     void processKeyboardEvents(MidiBuffer& buffer, int num_samples);
+    void processArpeggiator(MidiBuffer& buffer, int num_samples, double bpm, bool host_playing, double host_ppq);
     void processModulationChanges();
     void updateMemoryOutput(int samples, const vital::poly_float* audio);
 
     std::unique_ptr<vital::SoundEngine> engine_;
     std::unique_ptr<MidiManager> midi_manager_;
+    Arpeggiator arpeggiator_;
     std::unique_ptr<MidiKeyboardState> keyboard_state_;
 
     std::unique_ptr<WavetableCreator> wavetable_creators_[vital::kNumOscillators];

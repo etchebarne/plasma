@@ -72,6 +72,15 @@ namespace vital {
     createBaseControl("pitch_wheel");
     createBaseControl("mod_wheel");
 
+    // Read by the MIDI-stage arpeggiator in SynthBase; created here so they are saved and automatable.
+    createBaseControl("arp_on");
+    createBaseControl("arp_mode");
+    createBaseControl("arp_rate");
+    createBaseControl("arp_octaves");
+    createBaseControl("arp_gate");
+    createBaseControl("arp_swing");
+    createBaseControl("arp_latch");
+
     Value* effect_chain_order = createBaseControl("effect_chain_order");
     effect_chain_ = new ReorderableEffectChain(beats_per_second, voice_handler_->midi_offset_output());
     addSubmodule(effect_chain_);

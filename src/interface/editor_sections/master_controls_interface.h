@@ -27,6 +27,7 @@ class DisplaySettings;
 class OversampleSettings;
 class VoiceSettings;
 class OutputDisplays;
+class ArpSettings;
 class OscillatorSection;
 
 class TuningSelector : public TextSelector {
@@ -82,6 +83,7 @@ class MasterControlsInterface  : public SynthSection {
     std::unique_ptr<OversampleSettings> oversample_settings_;
     std::unique_ptr<VoiceSettings> voice_settings_;
     std::unique_ptr<OutputDisplays> output_displays_;
+    std::unique_ptr<ArpSettings> arp_settings_;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MasterControlsInterface)
 };

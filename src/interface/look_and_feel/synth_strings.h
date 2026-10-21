@@ -32,6 +32,35 @@ namespace strings {
     "On"
   };
 
+  const std::string kArpModeNames[] = {
+    "Up",
+    "Down",
+    "Up/Down",
+    "Down/Up",
+    "As Played",
+    "Random",
+    "Chord"
+  };
+
+  const std::string kArpRateNames[] = {
+    "1/1",
+    "1/2",
+    "1/2.",
+    "1/2T",
+    "1/4",
+    "1/4.",
+    "1/4T",
+    "1/8",
+    "1/8.",
+    "1/8T",
+    "1/16",
+    "1/16.",
+    "1/16T",
+    "1/32",
+    "1/32T",
+    "1/64"
+  };
+
   const std::string kWavetableDimensionNames[] = {
     "3D",
     "2D",

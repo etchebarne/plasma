@@ -20,6 +20,7 @@
 
 #include "line_generator.cpp"
 #include "midi_manager.cpp"
+#include "arpeggiator.cpp"
 #include "tuning.cpp"
 #include "startup.cpp"
 #include "synth_gui_interface.cpp"

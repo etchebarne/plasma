@@ -137,6 +137,7 @@ void SynthPlugin::releaseResources() {
 
 void SynthPlugin::processBlock(AudioSampleBuffer& buffer, MidiBuffer& midi_messages) {
   static constexpr double kSecondsPerMinute = 60.0f;
+  static constexpr double kDefaultBpm = 120.0;
 
   if (bypass_parameter_->getValue()) {
     processBlockBypassed(buffer, midi_messages);
@@ -158,8 +159,13 @@ void SynthPlugin::processBlock(AudioSampleBuffer& buffer, MidiBuffer& midi_messa
   }
 
   processModulationChanges();
-  if (total_samples)
+  if (total_samples) {
     processKeyboardEvents(midi_messages, total_samples);
+
+    bool host_playing = play_head && position_info_.isPlaying;
+    double bpm = position_info_.bpm > 0.0 ? position_info_.bpm : kDefaultBpm;
+    processArpeggiator(midi_messages, total_samples, bpm, host_playing, position_info_.ppqPosition);
+  }
 
   double sample_time = 1.0 / AudioProcessor::getSampleRate();
   for (int sample_offset = 0; sample_offset < total_samples;) {

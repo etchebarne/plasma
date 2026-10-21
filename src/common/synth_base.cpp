@@ -621,6 +621,19 @@ void SynthBase::processKeyboardEvents(MidiBuffer& buffer, int num_samples) {
   midi_manager_->replaceKeyboardMessages(buffer, num_samples);
 }
 
+void SynthBase::processArpeggiator(MidiBuffer& buffer, int num_samples, double bpm,
+                                   bool host_playing, double host_ppq) {
+  Arpeggiator::Settings settings;
+  settings.on = controls_["arp_on"]->value();
+  settings.mode = controls_["arp_mode"]->value();
+  settings.rate = controls_["arp_rate"]->value();
+  settings.octaves = controls_["arp_octaves"]->value();
+  settings.gate = controls_["arp_gate"]->value();
+  settings.swing = controls_["arp_swing"]->value();
+  settings.latch = controls_["arp_latch"]->value();
+  arpeggiator_.process(buffer, num_samples, engine_->getSampleRate(), bpm, host_playing, host_ppq, settings);
+}
+
 void SynthBase::processModulationChanges() {
   vital::modulation_change change;
   while (getNextModulationChange(change)) {

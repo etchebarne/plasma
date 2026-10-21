@@ -532,6 +532,106 @@ class DisplaySettings : public SynthSection {
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DisplaySettings)
 };
 
+class ArpSettings : public SynthSection {
+  public:
+    ArpSettings() : SynthSection("ARPEGGIATOR") {
+      static constexpr double kOctavesDragSensitivity = 0.3;
+      setSidewaysHeading(false);
+
+      on_ = std::make_unique<SynthButton>("arp_on");
+      addButton(on_.get());
+      setActivator(on_.get());
+
+      mode_ = std::make_unique<TextSelector>("arp_mode");
+      addSlider(mode_.get());
+      mode_->setSliderStyle(Slider::RotaryHorizontalVerticalDrag);
+      mode_->setLookAndFeel(TextLookAndFeel::instance());
+      mode_->setLongStringLookup(strings::kArpModeNames);
+
+      rate_ = std::make_unique<TextSelector>("arp_rate");
+      addSlider(rate_.get());
+      rate_->setSliderStyle(Slider::RotaryHorizontalVerticalDrag);
+      rate_->setLookAndFeel(TextLookAndFeel::instance());
+      rate_->setLongStringLookup(strings::kArpRateNames);
+
+      octaves_ = std::make_unique<SynthSlider>("arp_octaves");
+      addSlider(octaves_.get());
+      octaves_->setSliderStyle(Slider::RotaryHorizontalVerticalDrag);
+      octaves_->setLookAndFeel(TextLookAndFeel::instance());
+      octaves_->setSensitivity(kOctavesDragSensitivity);
+
+      latch_ = std::make_unique<SynthButton>("arp_latch");
+      addButton(latch_.get());
+      latch_->setLookAndFeel(TextLookAndFeel::instance());
+      latch_->setButtonText("LATCH");
+
+      gate_ = std::make_unique<SynthSlider>("arp_gate");
+      addSlider(gate_.get());
+      gate_->setSliderStyle(Slider::RotaryHorizontalVerticalDrag);
+
+      swing_ = std::make_unique<SynthSlider>("arp_swing");
+      addSlider(swing_.get());
+      swing_->setSliderStyle(Slider::RotaryHorizontalVerticalDrag);
+    }
+
+    void paintBackground(Graphics& g) override {
+      SynthSection::paintBackground(g);
+
+      g.setColour(findColour(Skin::kTextComponentBackground, true));
+      g.fillRoundedRectangle(latch_->getBounds().toFloat(), findValue(Skin::kLabelBackgroundRounding));
+
+      drawTextComponentBackground(g, mode_->getBounds(), true);
+      drawTextComponentBackground(g, rate_->getBounds(), true);
+      drawTextComponentBackground(g, octaves_->getBounds(), true);
+
+      setLabelFont(g);
+      drawLabelForComponent(g, "MODE", mode_.get(), true);
+      drawLabelForComponent(g, "RATE", rate_.get(), true);
+      drawLabelForComponent(g, "OCTAVES", octaves_.get(), true);
+      drawLabelForComponent(g, "GATE", gate_.get());
+      drawLabelForComponent(g, "SWING", swing_.get());
+    }
+
+    void paintBackgroundShadow(Graphics& g) override { paintTabShadow(g); }
+
+    void resized() override {
+      SynthSection::resized();
+
+      int widget_margin = getWidgetMargin();
+      int title_width = getTitleWidth();
+      int section_height = getKnobSectionHeight();
+      int component_height = section_height - widget_margin;
+      int width = getWidth() - 2 * widget_margin;
+      int x = widget_margin;
+      int y = title_width + widget_margin;
+
+      mode_->setBounds(x, y, width, component_height);
+
+      int row_2_y = mode_->getBottom() + widget_margin;
+      int width_left = (width - widget_margin) / 2;
+      int x_right = x + width_left + widget_margin;
+      rate_->setBounds(x, row_2_y, width_left, component_height);
+      octaves_->setBounds(x_right, row_2_y, getWidth() - x_right - widget_margin, component_height);
+
+      int latch_height = findValue(Skin::kTextButtonHeight);
+      latch_->setBounds(x, rate_->getBottom() + widget_margin, width, latch_height);
+
+      int knobs_y = getHeight() - section_height;
+      placeKnobsInArea(Rectangle<int>(0, knobs_y, getWidth(), section_height), { gate_.get(), swing_.get() });
+    }
+
+  private:
+    std::unique_ptr<SynthButton> on_;
+    std::unique_ptr<TextSelector> mode_;
+    std::unique_ptr<TextSelector> rate_;
+    std::unique_ptr<SynthSlider> octaves_;
+    std::unique_ptr<SynthButton> latch_;
+    std::unique_ptr<SynthSlider> gate_;
+    std::unique_ptr<SynthSlider> swing_;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ArpSettings)
+};
+
 class OutputDisplays : public SynthSection {
   public:
     OutputDisplays() : SynthSection("ANALYSIS") {
@@ -600,6 +700,9 @@ MasterControlsInterface::MasterControlsInterface(
   output_displays_ = std::make_unique<OutputDisplays>();
   addSubSection(output_displays_.get());
 
+  arp_settings_ = std::make_unique<ArpSettings>();
+  addSubSection(arp_settings_.get());
+
   setOpaque(false);
   setSkinOverride(Skin::kAdvanced);
 }
@@ -629,7 +732,10 @@ void MasterControlsInterface::resized() {
   int display_y = oversample_settings_->getBottom() + padding;
   display_settings_->setBounds(oversample_x, display_y, panel_width, display_height);
 
-  int displays_x = display_settings_->getRight() + padding;
+  int arp_x = display_settings_->getRight() + padding;
+  arp_settings_->setBounds(arp_x, settings_top, panel_width, settings_height);
+
+  int displays_x = arp_settings_->getRight() + padding;
   int displays_width = getWidth() - displays_x;
   output_displays_->setBounds(displays_x, settings_top, displays_width, settings_height);
 }

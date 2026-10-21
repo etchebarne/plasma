@@ -43,7 +43,11 @@ User data (presets, wavetables, LFO shapes, skins) is stored in `~/.local/share/
   - **Dimension**: adds decorrelated side content from two short delays of the mid signal. It widens the sound and cancels in mono, so mono playback is unaffected. Controls: Size, Mix.
 
   Every Hyper/Dimension knob can be modulated. Presets made without Hyper load with their effect order unchanged and Hyper off.
-
+- **Arpeggiator** (Advanced tab → ARPEGGIATOR):
+  - Modes: Up, Down, Up/Down, Down/Up, As Played, Random, Chord.
+  - Rate: 1/1 to 1/64, including dotted and triplet values.
+  - Octaves 1–4, plus Gate, Swing and Latch.
+  - While the host is playing, steps lock to its beat grid; otherwise the arp starts on the first key press. All settings save with the preset and can be automated from the host.
 - CMake build with a CLAP target.
 - Host parameter fixes:
   - a text lookup that went out of bounds (crashed on parameter display);
@@ -55,10 +59,14 @@ User data (presets, wavetables, LFO shapes, skins) is stored in `~/.local/share/
 ## Tests
 
 ```bash
-cmake --build build --target plasma_hyper_test && ./build/plasma_hyper_test
+cmake --build build --target plasma_hyper_test plasma_arp_test
+./build/plasma_hyper_test && ./build/plasma_arp_test
 ```
 
-This renders a note with Hyper/Dimension off and on. It checks that the output stays finite, that each stage widens the stereo image, and that pre-Hyper presets keep their effect order.
+- `plasma_hyper_test` renders a note with Hyper/Dimension off and on. It checks that the output stays finite, that each stage widens the stereo image, and that pre-Hyper presets keep their effect order.
+- `plasma_arp_test` checks the arp's patterns and sample-exact timing (gate, swing, latch, host sync, pass-through) and plays it through the plugin.
+
+`tools/ui_screenshot.py` clicks through the standalone UI on a private X server and saves a screenshot (usage is in the file).
 
 ## License
 
