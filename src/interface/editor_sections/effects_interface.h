@@ -35,6 +35,7 @@ class FilterSection;
 class FlangerSection;
 class PhaserSection;
 class ReverbSection;
+class HyperSection;
 
 class EffectsViewport : public Viewport {
   public:
@@ -111,6 +112,7 @@ class EffectsInterface : public SynthSection, public DragDropEffectOrder::Listen
     std::unique_ptr<PhaserSection> phaser_section_;
     std::unique_ptr<ReverbSection> reverb_section_;
     std::unique_ptr<FilterSection> filter_section_;
+    std::unique_ptr<HyperSection> hyper_section_;
     std::unique_ptr<DragDropEffectOrder> effect_order_;
     std::unique_ptr<OpenGlScrollBar> scroll_bar_;
 

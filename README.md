@@ -38,6 +38,12 @@ User data (presets, wavetables, LFO shapes, skins) is stored in `~/.local/share/
 
 ## Changes from upstream Vital
 
+- **Hyper/Dimension effect** (Serum-style, last slot in the FX rack by default; drag it to reorder):
+  - **Hyper**: 2–7 unison voices built from modulated short delays, spread across the stereo field. Controls: Unison, Rate, Detune, Mix. Detune is a pitch-deviation amount, so it sounds the same at any rate.
+  - **Dimension**: adds decorrelated side content from two short delays of the mid signal. It widens the sound and cancels in mono, so mono playback is unaffected. Controls: Size, Mix.
+
+  Every Hyper/Dimension knob can be modulated. Presets made without Hyper load with their effect order unchanged and Hyper off.
+
 - CMake build with a CLAP target.
 - Host parameter fixes:
   - a text lookup that went out of bounds (crashed on parameter display);
@@ -45,6 +51,14 @@ User data (presets, wavetables, LFO shapes, skins) is stored in `~/.local/share/
   - the host is told to rescan values after a state load;
   - corrupt host state no longer opens a blocking modal dialog.
 - Rebranded as Plasma: new logo, name and data directory.
+
+## Tests
+
+```bash
+cmake --build build --target plasma_hyper_test && ./build/plasma_hyper_test
+```
+
+This renders a note with Hyper/Dimension off and on. It checks that the output stays finite, that each stage widens the stereo image, and that pre-Hyper presets keep their effect order.
 
 ## License
 

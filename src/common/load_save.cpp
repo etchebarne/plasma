@@ -429,15 +429,17 @@ json LoadSave::updateFromOldVersion(json state) {
   }
 
   if (compareVersionStrings(version, "0.3.4") < 0) {
+    // 0.3.4 added the filter effect, going from 8 to 9 effects.
+    static constexpr int kOldNumEffects = 8;
     float float_order = settings["effect_chain_order"];
-    int effect_order[vital::constants::kNumEffects];
-    vital::utils::decodeFloatToOrder(effect_order, float_order, vital::constants::kNumEffects - 1);
-    for (int i = 0; i < vital::constants::kNumEffects - 1; ++i) {
+    int effect_order[kOldNumEffects + 1];
+    vital::utils::decodeFloatToOrder(effect_order, float_order, kOldNumEffects);
+    for (int i = 0; i < kOldNumEffects; ++i) {
       if (effect_order[i] >= vital::constants::kFilterFx)
         effect_order[i] += 1;
     }
-    effect_order[vital::constants::kNumEffects - 1] = vital::constants::kFilterFx;
-    settings["effect_chain_order"] = vital::utils::encodeOrderToFloat(effect_order, vital::constants::kNumEffects);
+    effect_order[kOldNumEffects] = vital::constants::kFilterFx;
+    settings["effect_chain_order"] = vital::utils::encodeOrderToFloat(effect_order, kOldNumEffects + 1);
   }
 
   if (compareVersionStrings(version, "0.3.5") < 0) {
@@ -1034,6 +1036,17 @@ bool LoadSave::jsonToState(SynthBase* synth, std::map<std::string, String>& save
   int compare_versions = compareVersionStrings(version, ProjectInfo::versionString);
   if (compare_versions < 0 || data["settings"].count("sub_octave"))
     data = updateFromOldVersion(data);
+
+  // Presets saved before Plasma added Hyper encode a 9 effect chain. Hyper is the last effect enum,
+  // so it goes at the end of the chain.
+  if (data["settings"].count("effect_chain_order") && data["settings"].count("hyper_on") == 0) {
+    static constexpr int kPreHyperNumEffects = vital::constants::kHyper;
+    int effect_order[vital::constants::kNumEffects];
+    vital::utils::decodeFloatToOrder(effect_order, data["settings"]["effect_chain_order"], kPreHyperNumEffects);
+    effect_order[kPreHyperNumEffects] = vital::constants::kHyper;
+    data["settings"]["effect_chain_order"] = vital::utils::encodeOrderToFloat(effect_order,
+                                                                             vital::constants::kNumEffects);
+  }
   
   json settings = data["settings"];
   json modulations = settings["modulations"];

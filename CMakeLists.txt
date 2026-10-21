@@ -114,3 +114,12 @@ target_link_libraries(Plasma
 clap_juce_extensions_plugin(TARGET Plasma
   CLAP_ID "net.etchebarne.plasma"
   CLAP_FEATURES instrument synthesizer stereo)
+
+# Headless engine check for the Hyper/Dimension effect: cmake --build build --target plasma_hyper_test
+add_executable(plasma_hyper_test EXCLUDE_FROM_ALL tests/hyper_test.cpp)
+target_include_directories(plasma_hyper_test PRIVATE src/juce_header third_party/JUCE/modules third_party
+  src/common src/synthesis/framework
+  $<TARGET_PROPERTY:PlasmaBinaryData,INTERFACE_INCLUDE_DIRECTORIES>)
+target_compile_definitions(plasma_hyper_test PRIVATE
+  $<TARGET_PROPERTY:Plasma,COMPILE_DEFINITIONS> JUCE_DONT_DECLARE_PROJECTINFO=1 JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1)
+target_link_libraries(plasma_hyper_test PRIVATE Plasma PlasmaBinaryData)

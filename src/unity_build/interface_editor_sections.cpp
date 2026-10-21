@@ -27,6 +27,7 @@
 #include "portamento_section.cpp"
 #include "volume_section.cpp"
 #include "chorus_section.cpp"
+#include "hyper_section.cpp"
 #include "wavetable_edit_section.cpp"
 #include "oscillator_section.cpp"
 #include "phaser_section.cpp"

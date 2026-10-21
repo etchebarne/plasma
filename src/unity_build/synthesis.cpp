@@ -60,6 +60,7 @@
 #include "random_lfo_module.cpp"
 #include "reorderable_effect_chain.cpp"
 #include "chorus_module.cpp"
+#include "hyper_module.cpp"
 #include "modulation_connection_processor.cpp"
 #include "equalizer_module.cpp"
 #include "distortion_module.cpp"

@@ -25,6 +25,7 @@
 #include "filter_module.h"
 #include "phaser_module.h"
 #include "reverb_module.h"
+#include "hyper_module.h"
 #include "synth_strings.h"
 
 namespace vital {
@@ -103,6 +104,8 @@ namespace vital {
         return new PhaserModule(beats_per_second_);
       case constants::kReverb:
         return new ReverbModule();
+      case constants::kHyper:
+        return new HyperModule();
       default:
         return nullptr;
     }

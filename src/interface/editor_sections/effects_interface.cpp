@@ -26,6 +26,7 @@
 #include "flanger_section.h"
 #include "phaser_section.h"
 #include "reverb_section.h"
+#include "hyper_section.h"
 
 class EffectsContainer : public SynthSection {
   public:
@@ -72,6 +73,9 @@ EffectsInterface::EffectsInterface(const vital::output_map& mono_modulations) : 
   filter_section_ = std::make_unique<FilterSection>("fx", mono_modulations);
   container_->addSubSection(filter_section_.get());
 
+  hyper_section_ = std::make_unique<HyperSection>("HYPER");
+  container_->addSubSection(hyper_section_.get());
+
   effect_order_ = std::make_unique<DragDropEffectOrder>("effect_chain_order");
   addSubSection(effect_order_.get());
   effect_order_->addListener(this);
@@ -87,6 +91,7 @@ EffectsInterface::EffectsInterface(const vital::output_map& mono_modulations) : 
   effects_list_[6] = flanger_section_.get();
   effects_list_[7] = phaser_section_.get();
   effects_list_[8] = reverb_section_.get();
+  effects_list_[9] = hyper_section_.get();
 
   scroll_bar_ = std::make_unique<OpenGlScrollBar>();
   scroll_bar_->setShrinkLeft(true);
@@ -107,6 +112,7 @@ EffectsInterface::~EffectsInterface() {
   flanger_section_ = nullptr;
   phaser_section_ = nullptr;
   reverb_section_ = nullptr;
+  hyper_section_ = nullptr;
   effect_order_ = nullptr;
 }
 

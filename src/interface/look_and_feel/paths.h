@@ -52,6 +52,10 @@ class Paths {
       return fromSvgData((const void*)BinaryData::vital_word_ring_svg, BinaryData::vital_word_ring_svgSize);
     }
 
+    static Path hyper() {
+      return fromSvgData((const void*)BinaryData::hyper_svg, BinaryData::hyper_svgSize);
+    }
+
     static Path chorus() {
       return fromSvgData((const void*)BinaryData::chorus_svg, BinaryData::chorus_svgSize);
     }

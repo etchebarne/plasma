@@ -45,6 +45,8 @@ namespace {
       return Paths::phaser();
     if (effect == "reverb")
       return Paths::reverb();
+    if (effect == "hyper")
+      return Paths::hyper();
 
     return Path();
   }

@@ -107,6 +107,7 @@ namespace vital {
       kFlanger,
       kPhaser,
       kReverb,
+      kHyper,
       kNumEffects
     };
 
