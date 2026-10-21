@@ -21,6 +21,7 @@
 #include "producers_module.h"
 #include "synth_oscillator.h"
 #include "sample_section.h"
+#include "sub_section.h"
 
 SynthesisInterface::SynthesisInterface(Authentication* auth,
                                        const vital::output_map& mono_modulations,
@@ -42,6 +43,9 @@ SynthesisInterface::SynthesisInterface(Authentication* auth,
   sample_section_ = std::make_unique<SampleSection>("SMP");
   addSubSection(sample_section_.get());
   sample_section_->addListener(this);
+
+  sub_section_ = std::make_unique<SubSection>("SUB");
+  addSubSection(sub_section_.get());
 
   setOpaque(false);
 }
@@ -70,7 +74,12 @@ void SynthesisInterface::resized() {
   int filter_y = sample_y + sample_height + findValue(Skin::kLargePadding);
   int filter_height = getHeight() - filter_y;
 
-  sample_section_->setBounds(0, sample_y, getWidth(), sample_height);
+  // The sample and sub oscillators share the row under the oscillators.
+  static constexpr float kSampleWidthPercent = 0.6f;
+  int sample_width = getWidth() * kSampleWidthPercent;
+  sample_section_->setBounds(0, sample_y, sample_width, sample_height);
+  int sub_x = sample_width + padding;
+  sub_section_->setBounds(sub_x, sample_y, getWidth() - sub_x, sample_height);
 
   filter_section_1_->setBounds(0, filter_y, width_left, filter_height);
   filter_section_2_->setBounds(right_x, filter_y, width_right, filter_height);

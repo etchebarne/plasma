@@ -728,6 +728,9 @@ json LoadSave::updateFromOldVersion(json state) {
     else
       settings["osc_3_destination"] = 3.0f;
 
+    // OSC 3 now plays the old sub; keep Plasma's sub oscillator from doubling it.
+    settings["sub_on"] = 0.0f;
+
     float osc1_filter1 = settings["filter_1_osc1_input"];
     float osc1_filter2 = settings["filter_2_osc1_input"];
     if (osc1_filter1 && osc1_filter2)

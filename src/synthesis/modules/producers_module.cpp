@@ -18,7 +18,7 @@
 
 namespace vital {
   ProducersModule::ProducersModule() :
-      SynthModule(kNumInputs, kNumOutputs), sample_destination_(nullptr),
+      SynthModule(kNumInputs, kNumOutputs), sample_destination_(nullptr), sub_destination_(nullptr),
       filter1_on_(nullptr), filter2_on_(nullptr) {
     for (int i = 0; i < kNumOscillators; ++i) {
       std::string number = std::to_string(i + 1);
@@ -33,6 +33,11 @@ namespace vital {
     addSubmodule(sampler_);
     addProcessor(sampler_);
     sampler_->enable(false);
+
+    sub_ = new SubModule();
+    addSubmodule(sub_);
+    addProcessor(sub_);
+    sub_->enable(false);
   }
 
   void ProducersModule::init() {
@@ -51,6 +56,10 @@ namespace vital {
     sampler_->useInput(input(kNoteCount), SampleModule::kNoteCount);
     sampler_->useInput(input(kMidi), SampleModule::kMidi);
 
+    sub_destination_ = createBaseControl("sub_destination");
+    sub_->useInput(input(kReset), SubModule::kReset);
+    sub_->useInput(input(kMidi), SubModule::kMidi);
+
     SynthModule::init();
     for (int i = 0; i < kNumOscillators; ++i) {
       int index1 = getFirstModulationIndex(i);
@@ -61,10 +70,38 @@ namespace vital {
     }
   }
 
+  void ProducersModule::route(const poly_float* buffer, int destination, bool filter1_on, bool filter2_on,
+                              int num_samples) {
+    bool raw = destination == constants::kEffects;
+    bool filter1 = destination == constants::kFilter1 || destination == constants::kDualFilters;
+    bool filter2 = destination == constants::kFilter2 || destination == constants::kDualFilters;
+    bool direct_out = destination == constants::kDirectOut;
+    // A source sent only to filters that are off goes straight to the effects instead.
+    if (raw || (!filter2 && filter1 && !filter1_on) ||
+               (!filter1 && filter2 && !filter2_on) ||
+               (filter1 && filter2 && !filter1_on && !filter2_on)) {
+      poly_float* raw_output = output(kRawOut)->buffer;
+      utils::addBuffers(raw_output, raw_output, buffer, num_samples);
+    }
+    if (filter1) {
+      poly_float* filter1_output = output(kToFilter1)->buffer;
+      utils::addBuffers(filter1_output, filter1_output, buffer, num_samples);
+    }
+    if (filter2) {
+      poly_float* filter2_output = output(kToFilter2)->buffer;
+      utils::addBuffers(filter2_output, filter2_output, buffer, num_samples);
+    }
+    if (direct_out) {
+      poly_float* direct_output = output(kDirectOut)->buffer;
+      utils::addBuffers(direct_output, direct_output, buffer, num_samples);
+    }
+  }
+
   void ProducersModule::process(int num_samples) {
     SynthModule::process(num_samples);
 
     getLocalProcessor(sampler_)->process(num_samples);
+    getLocalProcessor(sub_)->process(num_samples);
 
     SynthOscillator::DistortionType distortion_types[kNumOscillators];
     bool processed[kNumOscillators];
@@ -102,43 +139,11 @@ namespace vital {
     bool filter2_on = isFilter2On();
 
     for (int i = 0; i < kNumOscillators; ++i) {
-      const poly_float* buffer = oscillators_[i]->output(OscillatorModule::kLevelled)->buffer;
-
-      int destination = oscillator_destinations_[i]->value();
-      bool raw = destination == constants::kEffects;
-      bool filter1 = destination == constants::kFilter1 || destination == constants::kDualFilters;
-      bool filter2 = destination == constants::kFilter2 || destination == constants::kDualFilters;
-      bool direct_out = destination == constants::kDirectOut;
-      if (raw || (!filter2 && filter1 && !filter1_on) ||
-                 (!filter1 && filter2 && !filter2_on) ||
-                 (filter1 && filter2 && !filter1_on && !filter2_on)) {
-        utils::addBuffers(raw_output, raw_output, buffer, num_samples);
-      }
-      if (filter1)
-        utils::addBuffers(filter1_output, filter1_output, buffer, num_samples);
-      if (filter2)
-        utils::addBuffers(filter2_output, filter2_output, buffer, num_samples);
-      if (direct_out)
-        utils::addBuffers(direct_output, direct_output, buffer, num_samples);
+      route(oscillators_[i]->output(OscillatorModule::kLevelled)->buffer, oscillator_destinations_[i]->value(),
+            filter1_on, filter2_on, num_samples);
     }
-
-    const poly_float* sample = sampler_->output(SampleModule::kLevelled)->buffer;
-
-    int sample_destination = sample_destination_->value();
-    bool sample_raw = sample_destination == constants::kEffects;
-    bool filter1_sample = sample_destination == constants::kFilter1 || sample_destination == constants::kDualFilters;
-    bool filter2_sample = sample_destination == constants::kFilter2 || sample_destination == constants::kDualFilters;
-    bool sample_direct_out = sample_destination == constants::kDirectOut;
-    if (sample_raw || (!filter2_sample && filter1_sample && !filter1_on) ||
-                      (!filter1_sample && filter2_sample && !filter2_on) ||
-                      (filter1_sample && filter2_sample && !filter1_on && !filter2_on)) {
-      utils::addBuffers(raw_output, raw_output, sample, num_samples);
-    }
-    if (filter1_sample)
-      utils::addBuffers(filter1_output, filter1_output, sample, num_samples);
-    if (filter2_sample)
-      utils::addBuffers(filter2_output, filter2_output, sample, num_samples);
-    if (sample_direct_out)
-      utils::addBuffers(direct_output, direct_output, sample, num_samples);
+    route(sampler_->output(SampleModule::kLevelled)->buffer, sample_destination_->value(),
+          filter1_on, filter2_on, num_samples);
+    route(sub_->output(SubModule::kLevelled)->buffer, sub_destination_->value(), filter1_on, filter2_on, num_samples);
   }
 } // namespace vital

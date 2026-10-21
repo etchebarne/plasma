@@ -18,6 +18,7 @@
 #include "modulation_matrix.cpp"
 #include "equalizer_section.cpp"
 #include "sample_section.cpp"
+#include "sub_section.cpp"
 #include "flanger_section.cpp"
 #include "macro_knob_section.cpp"
 #include "effects_interface.cpp"

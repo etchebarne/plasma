@@ -23,6 +23,8 @@
 #include "sample_section.h"
 #include "synth_section.h"
 
+class SubSection;
+
 class SynthesisInterface : public SynthSection, public OscillatorSection::Listener,
                            public SampleSection::Listener, public FilterSection::Listener {
   public:
@@ -60,6 +62,7 @@ class SynthesisInterface : public SynthSection, public OscillatorSection::Listen
     std::unique_ptr<FilterSection> filter_section_2_;
     std::unique_ptr<OscillatorSection> oscillators_[vital::kNumOscillators];
     std::unique_ptr<SampleSection> sample_section_;
+    std::unique_ptr<SubSection> sub_section_;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SynthesisInterface)
 };

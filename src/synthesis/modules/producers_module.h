@@ -19,6 +19,7 @@
 #include "synth_module.h"
 #include "oscillator_module.h"
 #include "sample_module.h"
+#include "sub_module.h"
 
 namespace vital {
   class ProducersModule : public SynthModule {
@@ -65,12 +66,15 @@ namespace vital {
       void setFilter2On(const Value* on) { filter2_on_ = on; }
 
     protected:
+      void route(const poly_float* buffer, int destination, bool filter1_on, bool filter2_on, int num_samples);
       bool isFilter1On() { return filter1_on_ == nullptr || filter1_on_->value() != 0.0f; }
       bool isFilter2On() { return filter2_on_ == nullptr || filter2_on_->value() != 0.0f; }
       OscillatorModule* oscillators_[kNumOscillators];
       Value* oscillator_destinations_[kNumOscillators];
       Value* sample_destination_;
       SampleModule* sampler_;
+      Value* sub_destination_;
+      SubModule* sub_;
 
       const Value* filter1_on_;
       const Value* filter2_on_;

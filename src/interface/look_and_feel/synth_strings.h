@@ -32,6 +32,15 @@ namespace strings {
     "On"
   };
 
+  const std::string kSubWaveformNames[] = {
+    "Sine",
+    "Triangle",
+    "Saw",
+    "Square",
+    "Pulse",
+    "Rounded"
+  };
+
   const std::string kArpModeNames[] = {
     "Up",
     "Down",
