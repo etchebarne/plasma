@@ -71,6 +71,11 @@ JUCE_END_IGNORE_WARNINGS_GCC_LIKE
 #elif JUCE_VERSION > 0x060008
 #include <juce_audio_plugin_client/utility/juce_LinuxMessageThread.h>
 #endif
+// Plasma: its JUCE 6.0.5 carries a backport of JUCE 7's LinuxEventLoopInternal, so the host can
+// run JUCE's file descriptors directly instead of polling them on a 20 ms timer.
+#if JUCE_VERSION < 0x070006 && defined(PLASMA_JUCE_LINUX_EVENT_LOOP_BACKPORT)
+#define HAS_LINUX_FD 1
+#endif
 #endif
 
 #define FIXME(x)                                                                                   \
@@ -551,6 +556,10 @@ class ClapJuceWrapper : public clap::helpers::Plugin<
         {
             _host.timerSupportRegister(1000 / 50, &idleTimer);
         }
+#if HAS_LINUX_FD
+        // Host extensions only become usable here, after JUCE registered its first descriptors.
+        fdCallbacksChanged();
+#endif
 #endif
         defineAudioPorts();
 
@@ -574,6 +583,14 @@ class ClapJuceWrapper : public clap::helpers::Plugin<
         }
 #elif JUCE_VERSION > 0x060008
         while (juce::dispatchNextMessageOnSystemQueue(true))
+        {
+        }
+#elif HAS_LINUX_FD
+        // Drain everything pending (runDispatchLoopUntil(0) stops after one dispatch), but don't
+        // hold the host's main thread for long.
+        auto deadline = juce::Time::getMillisecondCounterHiRes() + 5.0;
+        while (juce::LinuxEventLoopInternal::dispatchPendingEvents() &&
+               juce::Time::getMillisecondCounterHiRes() < deadline)
         {
         }
 #else

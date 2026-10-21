@@ -87,8 +87,10 @@ target_compile_definitions(Plasma PUBLIC
   JUCE_VST3_CAN_REPLACE_VST2=0
   JUCE_MODAL_LOOPS_PERMITTED=1)
 
+# JUCE 6.0.5 calls member functions through null pointers in places (e.g. Component coordinate
+# conversion with no source); modern GCC deletes the null checks that make that work.
 target_compile_options(Plasma PRIVATE
-  -ffast-math -ftree-vectorize -ftree-slp-vectorize -funroll-loops
+  -ffast-math -ftree-vectorize -ftree-slp-vectorize -funroll-loops -fno-delete-null-pointer-checks
   $<$<COMPILE_LANGUAGE:CXX>:-w>)
 
 target_link_libraries(Plasma
@@ -110,6 +112,9 @@ target_link_libraries(Plasma
     juce::juce_opengl
   PUBLIC
     juce::juce_recommended_config_flags)
+
+# Our JUCE has a backport of JUCE 7's Linux event loop hooks; see juce_EventLoopInternal_linux.h.
+target_compile_definitions(Plasma PUBLIC PLASMA_JUCE_LINUX_EVENT_LOOP_BACKPORT=1)
 
 clap_juce_extensions_plugin(TARGET Plasma
   CLAP_ID "net.etchebarne.plasma"
@@ -133,3 +138,10 @@ plasma_add_test(plasma_hyper_test tests/hyper_test.cpp)
 plasma_add_test(plasma_arp_test tests/arp_test.cpp)
 plasma_add_test(plasma_sub_test tests/sub_test.cpp)
 plasma_add_test(plasma_formula_test tests/formula_test.cpp)
+plasma_add_test(plasma_param_bench tests/param_change_bench.cpp)
+
+# Opens the CLAP editor in a minimal Bitwig-like host and measures knob drag lag:
+#   ./build/plasma_clap_gui_latency build/Plasma_artefacts/Release/CLAP/Plasma.clap 1 "Oscillator 1 Unison Detune" 598 127
+add_executable(plasma_clap_gui_latency EXCLUDE_FROM_ALL tests/clap_gui_latency.cpp)
+target_include_directories(plasma_clap_gui_latency PRIVATE third_party/clap-juce-extensions/clap-libs/clap/include)
+target_link_libraries(plasma_clap_gui_latency PRIVATE X11 dl)

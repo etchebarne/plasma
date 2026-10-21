@@ -92,6 +92,7 @@
 
 #if JUCE_LINUX
  #include "native/juce_linux_EventLoop.h"
+ #include "native/juce_EventLoopInternal_linux.h"
 #endif
 
 #if JUCE_WINDOWS

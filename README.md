@@ -64,6 +64,10 @@ User data (presets, wavetables, LFO shapes, skins) is stored in `~/.local/share/
   - text → value parsing now inverts the display scaling and normalizes;
   - the host is told to rescan values after a state load;
   - corrupt host state no longer opens a blocking modal dialog.
+- Responsive editor in CLAP hosts on Linux:
+  - `third_party/JUCE` carries a backport of JUCE 7's Linux event-loop hooks, so the CLAP wrapper registers JUCE's X11 and message descriptors with the host (Bitwig) and handles events as they arrive. Before, it polled them on a 20 ms timer, which made text controls such as unison detune and transpose lag.
+  - Hosts without fd support still get the timer, which now drains everything pending.
+- Built with `-fno-delete-null-pointer-checks`, because JUCE 6.0.5 relies on null-`this` checks that modern GCC removes (at -O2 it crashed on startup).
 - Rebranded as Plasma: new logo, name and data directory.
 
 ## Tests
@@ -77,6 +81,8 @@ cmake --build build --target plasma_hyper_test plasma_arp_test plasma_sub_test p
 - `plasma_formula_test` covers the formula language (precedence, functions, error messages) and renders formula tables through an oscillator, including a sine-to-square sweep on the Wave Frame knob.
 - `plasma_sub_test` plays the sub alone and checks its pitch, each waveform's harmonic ratios, panning, and save/reload.
 - `plasma_arp_test` checks the arp's patterns and sample-exact timing (gate, swing, latch, host sync, pass-through) and plays it through the plugin.
+
+`plasma_clap_gui_latency` (a target, not run by default) hosts the CLAP editor the way Bitwig does and measures how long mouse input takes to reach a control. Usage is at the top of `tests/clap_gui_latency.cpp`. `plasma_param_bench` times audio blocks while a parameter moves.
 
 `tools/ui_screenshot.py` clicks, right-clicks and presses keys in the standalone UI on a private X server and saves a screenshot (usage is in the file).
 

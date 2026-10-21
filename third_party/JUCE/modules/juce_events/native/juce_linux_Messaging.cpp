@@ -132,6 +132,7 @@ public:
 
         fdReadCallbacks.push_back ({ fd, std::move (cb) });
         pfds.push_back ({ fd, eventMask, 0 });
+        notifyListeners();
     }
 
     void unregisterFdCallback (int fd)
@@ -157,6 +158,8 @@ public:
             pfds.erase (std::remove_if (std::begin (pfds), std::end (pfds), removePredicate),
                         std::end (pfds));
         }
+
+        notifyListeners();
     }
 
     bool dispatchPendingEvents()
@@ -217,6 +220,54 @@ public:
         return fdReadCallbacks;
     }
 
+    // Plasma: hooks for hosts that run JUCE's file descriptors in their own event loop.
+    void dispatchEvent (int fd)
+    {
+        const ScopedLock sl (lock);
+
+        for (auto& fdAndCallback : fdReadCallbacks)
+        {
+            if (fdAndCallback.first != fd)
+                continue;
+
+            {
+                ScopedValueSetter<bool> insideFdReadCallback (shouldDeferModifyingReadCallbacks, true);
+                fdAndCallback.second (fd);
+            }
+
+            if (! deferredReadCallbackModifications.empty())
+            {
+                for (auto& deferredRegisterEvent : deferredReadCallbackModifications)
+                    deferredRegisterEvent();
+
+                deferredReadCallbackModifications.clear();
+            }
+
+            return;
+        }
+    }
+
+    std::vector<int> getRegisteredFds()
+    {
+        const ScopedLock sl (lock);
+        std::vector<int> fds;
+        for (auto& fdAndCallback : fdReadCallbacks)
+            fds.push_back (fdAndCallback.first);
+        return fds;
+    }
+
+    void addListener (LinuxEventLoopInternal::Listener& listener)
+    {
+        const ScopedLock sl (lock);
+        listeners.push_back (&listener);
+    }
+
+    void removeListener (LinuxEventLoopInternal::Listener& listener)
+    {
+        const ScopedLock sl (lock);
+        listeners.erase (std::remove (listeners.begin(), listeners.end(), &listener), listeners.end());
+    }
+
     //==============================================================================
     JUCE_DECLARE_SINGLETON (InternalRunLoop, false)
 
@@ -228,6 +279,13 @@ private:
 
     bool shouldDeferModifyingReadCallbacks = false;
     std::vector<std::function<void()>> deferredReadCallbackModifications;
+    std::vector<LinuxEventLoopInternal::Listener*> listeners;
+
+    void notifyListeners()
+    {
+        for (auto* listener : listeners)
+            listener->fdCallbacksChanged();
+    }
 };
 
 JUCE_IMPLEMENT_SINGLETON (InternalRunLoop)
@@ -321,6 +379,41 @@ void LinuxEventLoop::unregisterFdCallback (int fd)
 {
     if (auto* runLoop = InternalRunLoop::getInstanceWithoutCreating())
         runLoop->unregisterFdCallback (fd);
+}
+
+//==============================================================================
+void LinuxEventLoopInternal::registerLinuxEventLoopListener (Listener& listener)
+{
+    if (auto* runLoop = InternalRunLoop::getInstanceWithoutCreating())
+        runLoop->addListener (listener);
+}
+
+void LinuxEventLoopInternal::deregisterLinuxEventLoopListener (Listener& listener)
+{
+    if (auto* runLoop = InternalRunLoop::getInstanceWithoutCreating())
+        runLoop->removeListener (listener);
+}
+
+void LinuxEventLoopInternal::invokeEventLoopCallbackForFd (int fd)
+{
+    if (auto* runLoop = InternalRunLoop::getInstanceWithoutCreating())
+        runLoop->dispatchEvent (fd);
+}
+
+std::vector<int> LinuxEventLoopInternal::getRegisteredFds()
+{
+    if (auto* runLoop = InternalRunLoop::getInstanceWithoutCreating())
+        return runLoop->getRegisteredFds();
+
+    return {};
+}
+
+bool LinuxEventLoopInternal::dispatchPendingEvents()
+{
+    if (auto* runLoop = InternalRunLoop::getInstanceWithoutCreating())
+        return runLoop->dispatchPendingEvents();
+
+    return false;
 }
 
 } // namespace juce
